@@ -29,9 +29,16 @@ __attribute__((noreturn)) void platform_reset(void);
 /* Clears sensitive data with stores the compiler keeps. */
 void platform_secret_clear(uint8_t *buf, size_t len);
 
-/* Gives the BLE stack a fresh random seed. The stack's later seed requests are
- * served from its event interrupt. */
+/* Hands the BLE stack its exceptions through a vector table in RAM, and runs its reset
+ * handler. Called once, before the stack is enabled. */
+void platform_stack_attach(void);
+
+/* Gives the BLE stack a fresh random seed. */
 bool platform_stack_seed(void);
+
+/* Serves the BLE stack's pending SoC events. Returns false when a seed request
+ * cannot be served. */
+bool platform_soc_events_serve(void);
 
 /*
  * Writes @p len bytes to NVM at @p addr, which lies in the update slot, and returns

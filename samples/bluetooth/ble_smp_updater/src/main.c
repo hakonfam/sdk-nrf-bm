@@ -49,8 +49,8 @@
  * Stack placement and clocks:
  * - The stack sits at softdevice_partition and uses the RAM below the chosen
  *   zephyr,sram. It writes NVM for this image through sd_flash_write().
- * - BLE events are polled in thread mode; the stack's event interrupt only wakes
- *   the main loop for them.
+ * - BLE and SoC events are polled in thread mode; the stack's event interrupt only
+ *   wakes the main loop for them.
  * - LF clock: the LFXO, 50 ppm. HFXO ramp-up 1500 us.
  */
 
@@ -430,10 +430,12 @@ static void ble_event_serve(const ble_evt_t *evt)
 	}
 }
 
-/* Serves the BLE events the stack holds. Its SoC events go to the platform from the
- * event interrupt, which also wakes the main loop. */
 static void stack_events_drain(void)
 {
+	if (!platform_soc_events_serve()) {
+		platform_halt();
+	}
+
 	for (;;) {
 		uint16_t len = (uint16_t)sizeof(evt_buf);
 
@@ -447,6 +449,7 @@ static void stack_events_drain(void)
 int main(void)
 {
 	link.conn_handle = BLE_CONN_HANDLE_INVALID;
+	platform_stack_attach();
 
 	const psa_status_t psa_status = psa_crypto_init();
 
